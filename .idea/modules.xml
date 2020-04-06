@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/pubsub.iml" filepath="$PROJECT_DIR$/.idea/pubsub.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/pubsub-tools.iml" filepath="$PROJECT_DIR$/.idea/pubsub-tools.iml" />
     </modules>
   </component>
 </project>
