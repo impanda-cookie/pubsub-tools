@@ -10,7 +10,6 @@ import (
 	"log"
 	"os"
 	"os/user"
-	"strings"
 )
 
 type Config struct {
@@ -97,17 +96,18 @@ func Pubsub(app *cli.App) {
 }
 
 func handle(c *cli.Context) error {
+	var config = &Config{}
 	// 1.判断是否只是修改设置默认配置
 	if defaultPid != "" || defaultTid != "" {
 		if defaultPid != "" {
-			err := setDefaultPid(defaultPid, configPath)
+			err := config.setDefaultPid(defaultPid, configPath)
 			if err != nil {
 				fmt.Println(err)
 				return err
 			}
 			fmt.Println("设置defaultPid成功")
 		} else {
-			err := setDefaultTid(defaultTid, configPath)
+			err := config.setDefaultTid(defaultTid, configPath)
 			if err != nil {
 				fmt.Println(err)
 				return err
@@ -118,7 +118,7 @@ func handle(c *cli.Context) error {
 	}
 	// 2.load 本地配置并复制给confiGlobal
 	if configGlobal == nil {
-		err, config, f := loadConfig(configPath)
+		err, f := config.loadConfig(configPath)
 		defer f.Close()
 		if err != nil {
 			return err
@@ -193,8 +193,8 @@ func handle(c *cli.Context) error {
 /**
 设置本地config defaultPid
 */
-func setDefaultPid(defaultPid string, configPath string) error {
-	err, config, f := loadConfig(configPath)
+func (config *Config) setDefaultPid(defaultPid string, configPath string) error {
+	err, f := config.loadConfig(configPath)
 	if err != nil {
 		return err
 	}
@@ -220,8 +220,8 @@ func setDefaultPid(defaultPid string, configPath string) error {
 /**
 设置本地config defaultTid
 */
-func setDefaultTid(defaultTid string, configPath string) error {
-	err, config, f := loadConfig(configPath)
+func (config *Config) setDefaultTid(defaultTid string, configPath string) error {
+	err, f := config.loadConfig(configPath)
 	if err != nil {
 		return err
 	}
@@ -247,7 +247,7 @@ func setDefaultTid(defaultTid string, configPath string) error {
 /**
 load 本地config 文件
 */
-func loadConfig(configPath string) (error, *Config, *os.File) {
+func (config *Config) loadConfig(configPath string) (error, *os.File) {
 	var (
 		f   *os.File
 		err error
@@ -256,57 +256,21 @@ func loadConfig(configPath string) (error, *Config, *os.File) {
 		err, f = createFile(configPath)
 	}
 	if err != nil {
-		return err, nil, nil
+		return err, nil
 	}
 	data, err := ioutil.ReadFile(configPath)
 	if err != nil {
-		return err, nil, nil
+		return err, nil
 	}
-	config := Config{}
-	err = json.Unmarshal(data, &config)
+	err = json.Unmarshal(data, config)
 	if err != nil {
 		fmt.Println(err)
 		f, err = os.OpenFile(configPath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, os.ModePerm)
 		if err != nil {
-			return err, nil, nil
+			return err, nil
 		}
 		fmt.Println("配置文件json格式错误，请确认或者删除配置文件格式，路径：" + configPath + "，已将其自动覆盖")
 	}
 
-	return nil, &config, f
-}
-
-/**
-递归创建文件
-*/
-func createFile(filePath string) (error, *os.File) {
-	pieceArr := strings.Split(filePath, "/")
-	length := len(pieceArr)
-	folderPath := strings.Join(pieceArr[:length-1], "/")
-	err := os.MkdirAll(folderPath, os.ModePerm)
-	if err != nil {
-		return err, nil
-	}
-	f, err := os.Create(filePath)
-	if err != nil {
-		return err, nil
-	}
-	_, err = f.Write([]byte("{}"))
-	if err != nil {
-		return err, nil
-	}
 	return nil, f
-
-}
-
-//查看文件是否存在
-func exists(path string) bool {
-	_, err := os.Stat(path) //os.Stat获取文件信息
-	if err != nil {
-		if os.IsExist(err) {
-			return true
-		}
-		return false
-	}
-	return true
 }
